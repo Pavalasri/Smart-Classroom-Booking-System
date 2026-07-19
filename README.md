@@ -136,6 +136,4 @@ CREATE TABLE bookings (
 
 ---
 
-## Portability & Deploying
-*   **Vercel (Frontend)**: Connect your GitHub repository to Vercel, set the build command to `npm run build` and output directory to `dist`. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` as production environment variables.
-*   **Supabase (Backend/DB)**: RLS policies and trigger functions are bundled directly inside PostgreSQL, meaning no separate backend server is required!
+
