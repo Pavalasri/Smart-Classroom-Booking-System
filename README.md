@@ -1,6 +1,6 @@
 # CampusFlow | University Classroom Booking Dashboard
 
-**Live demo:** https://smart-classroom-booking-system.vercel.app
+**Live demo:**   https://smart-classroom-booking-system-se6g.vercel.app
 
 CampusFlow is a full-stack, real-time university classroom booking dashboard for students and faculty. It shows live classroom occupancy (Green = vacant, Red = occupied by a scheduled class, Yellow = booked ad-hoc) based on recurring weekly timetables and active reservations, and lets signed-in users book free slots.
 
