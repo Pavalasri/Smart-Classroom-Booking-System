@@ -104,7 +104,7 @@ export default function BookingModal({
 
     try {
       // 2. Perform DB Insertion
-      const { data, error: dbError } = await supabase
+      const { error: dbError } = await supabase
         .from('bookings')
         .insert([
           {

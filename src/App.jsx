@@ -16,7 +16,6 @@ import {
   AlertCircle,
   CalendarDays,
   Trash2,
-  Users,
   X
 } from 'lucide-react'
 
@@ -196,7 +195,7 @@ export default function App() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'bookings' },
-        async (payload) => {
+        async () => {
           await fetchBookingsForDate(selectedDate)
         }
       )
