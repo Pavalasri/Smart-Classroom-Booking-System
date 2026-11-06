@@ -1,7 +1,8 @@
 import { LogOut, Calendar, Building2, User, Landmark, Sun, Moon } from 'lucide-react'
 
 export default function Navbar({ 
-  user, 
+  user,
+  isAdmin,
   onLogout, 
   selectedBuilding, 
   setSelectedBuilding, 
@@ -74,6 +75,11 @@ export default function Navbar({
           <div className="hidden lg:flex flex-col items-end text-right">
             <span className="text-sm font-bold text-slate-800 dark:text-slate-200 leading-none">
               {user.email.split('@')[0]}
+              {isAdmin && (
+                <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-indigo-100 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300">
+                  Admin
+                </span>
+              )}
             </span>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-1">
               {user.email}

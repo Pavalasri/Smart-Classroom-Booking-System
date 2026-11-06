@@ -5,6 +5,7 @@ import RoomCard from './components/RoomCard'
 import BookingModal from './components/BookingModal'
 import Auth from './components/Auth'
 import MyBookings from './components/MyBookings'
+import AdminPanel from './components/AdminPanel'
 import { cancelBooking } from './lib/bookings'
 import { getTodayStr, getCurrentTimeStr, getCurrentMinutes, getDayOfWeek } from './lib/time'
 import { 
@@ -64,6 +65,8 @@ const timeToPercent = (timeStr) => {
 
 export default function App() {
   const [user, setUser] = useState(null)
+  // Role from public.profiles. Only used to show/hide UI; RLS enforces it.
+  const [isAdmin, setIsAdmin] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
 
@@ -74,7 +77,7 @@ export default function App() {
   const [error, setError] = useState(null)
 
   const [selectedBuilding, setSelectedBuilding] = useState('All')
-  // Which page is shown: 'dashboard' | 'my-bookings' (no router needed)
+  // Which page is shown: 'dashboard' | 'my-bookings' | 'admin' (no router needed)
   const [view, setView] = useState('dashboard')
   
   const [selectedDate, setSelectedDate] = useState(getTodayStr())
@@ -111,6 +114,20 @@ export default function App() {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Load the signed-in user's role
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false)
+      return
+    }
+    supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+      .then(({ data }) => setIsAdmin(data?.role === 'admin'))
+  }, [user])
 
   // Auto time synchronization
   useEffect(() => {
@@ -303,6 +320,7 @@ export default function App() {
       {/* Navbar */}
       <Navbar
         user={user}
+        isAdmin={isAdmin}
         onLogout={handleLogout}
         selectedBuilding={selectedBuilding}
         setSelectedBuilding={setSelectedBuilding}
@@ -316,7 +334,7 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
 
         {/* Page tabs */}
-        <PageTabs view={view} setView={setView} user={user} />
+        <PageTabs view={view} setView={setView} user={user} isAdmin={isAdmin} />
         
         {/* Error Banner */}
         {error && (
@@ -638,6 +656,8 @@ export default function App() {
         )}
 
         {view === 'my-bookings' && user && <MyBookings user={user} />}
+
+        {view === 'admin' && isAdmin && <AdminPanel rooms={rooms} onRoomsChanged={fetchData} />}
       </main>
 
       {/* Guest Login Modal */}
@@ -701,10 +721,11 @@ function RefreshCwIcon({ className }) {
 
 // Simple tab bar used instead of a router. Tabs that need a login are hidden
 // for guests.
-function PageTabs({ view, setView, user }) {
+function PageTabs({ view, setView, user, isAdmin }) {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', show: true },
     { id: 'my-bookings', label: 'My Bookings', show: Boolean(user) },
+    { id: 'admin', label: 'Admin', show: isAdmin },
   ]
   return (
     <div className="flex gap-2 mb-6">
