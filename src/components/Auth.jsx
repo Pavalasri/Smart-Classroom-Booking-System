@@ -54,7 +54,7 @@ export default function Auth({ onAuthSuccess }) {
           </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 text-center">
             {isSignUp 
-              ? 'Join the Smart Classroom network to book rooms' 
+              ? 'Join CampusFlow to book classrooms' 
               : 'Sign in to reserve classrooms and manage bookings'}
           </p>
         </div>

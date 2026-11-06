@@ -1,5 +1,7 @@
 # CampusFlow | University Classroom Booking Dashboard
 
+**Live demo:** https://smart-classroom-booking-system.vercel.app
+
 CampusFlow is a full-stack, real-time university classroom booking dashboard designed for students and faculty. It calculates classroom occupancy live (Green = vacant, Red = occupied by scheduled class, Yellow = booked ad-hoc) based on recurring weekly timetables and active reservations.
 
 ## Tech Stack
@@ -60,7 +62,7 @@ To provide immediate visual feedback without requiring a server roundtrip, the f
 
 ## Database Schema
 
-Run the following tables, constraints, policies, and triggers in your Supabase SQL Editor. The code is available in [schema.sql](file:///c:/Users/Admin/Desktop/Smart%20Classroom/schema.sql).
+Run the following tables, constraints, policies, and triggers in your Supabase SQL Editor. The code is available in [schema.sql](schema.sql).
 
 ### Rooms Table
 ```sql
@@ -106,14 +108,15 @@ CREATE TABLE bookings (
 ### 1. Database Setup in Supabase
 1.  Go to [Supabase Console](https://supabase.com/) and create a new project.
 2.  Open the **SQL Editor** in your project dashboard.
-3.  Copy and run the contents of [schema.sql](file:///c:/Users/Admin/Desktop/Smart%20Classroom/schema.sql) to create the schema, enable RLS, set up policies, and create the validation trigger.
-4.  Copy and run the contents of [seed.sql](file:///c:/Users/Admin/Desktop/Smart%20Classroom/seed.sql) to populate 10 classrooms across 2 buildings along with recurring schedules.
+3.  Copy and run the contents of [schema.sql](schema.sql) to create the schema, enable RLS, set up policies, and create the validation trigger.
+4.  Copy and run the contents of [seed.sql](seed.sql) to populate 10 classrooms across 2 buildings along with recurring schedules.
 5.  Go to **Database** -> **Replication** -> **Source tables** and toggle **bookings** to active. This enables Supabase Realtime subscriptions on the `bookings` table.
 
 ### 2. Local App Setup
-1.  Clone this repository or navigate to the directory:
+1.  Clone this repository and enter the project folder:
     ```bash
-    cd "Smart Classroom"
+    git clone <repo-url>
+    cd Smart-Classroom-Booking-System
     ```
 2.  Install dependencies:
     ```bash

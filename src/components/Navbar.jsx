@@ -23,7 +23,7 @@ export default function Navbar({
             CampusFlow
           </h1>
           <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase tracking-wider mt-0.5">
-            Smart Classroom Hub
+            Classroom Booking Hub
           </p>
         </div>
       </div>
