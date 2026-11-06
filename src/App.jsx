@@ -4,6 +4,7 @@ import Navbar from './components/Navbar'
 import RoomCard from './components/RoomCard'
 import BookingModal from './components/BookingModal'
 import Auth from './components/Auth'
+import { getTodayStr, getCurrentTimeStr, getCurrentMinutes, getDayOfWeek } from './lib/time'
 import { 
   Clock, 
   Layers, 
@@ -73,22 +74,8 @@ export default function App() {
 
   const [selectedBuilding, setSelectedBuilding] = useState('All')
   
-  const getTodayStr = () => {
-    const today = new Date()
-    const yyyy = today.getFullYear()
-    const mm = String(today.getMonth() + 1).padStart(2, '0')
-    const dd = String(today.getDate()).padStart(2, '0')
-    return `${yyyy}-${mm}-${dd}`
-  }
   const [selectedDate, setSelectedDate] = useState(getTodayStr())
 
-  const getCurrentTimeStr = () => {
-    const now = new Date()
-    const h = String(now.getHours()).padStart(2, '0')
-    const m = String(now.getMinutes()).padStart(2, '0')
-    return `${h}:${m}:00`
-  }
-  
   const [selectedTime, setSelectedTime] = useState(getCurrentTimeStr())
   const [syncWithTime, setSyncWithTime] = useState(true)
 
@@ -292,7 +279,7 @@ export default function App() {
     return selectedBuilding === 'All' || r.building === selectedBuilding
   })
 
-  const dayOfWeek = new Date(selectedDate).getDay()
+  const dayOfWeek = getDayOfWeek(selectedDate)
   const isTimeInRange = (time, start, end) => time >= start && time < end
 
   // Calculate live counts
@@ -331,8 +318,7 @@ export default function App() {
 
   // Calculate vertical Live Line indicator position
   const getLivePercent = () => {
-    const now = new Date()
-    const currentMins = now.getHours() * 60 + now.getMinutes()
+    const currentMins = getCurrentMinutes()
     const start = 480  // 08:00 AM
     const end = 1320   // 10:00 PM
     if (currentMins < start || currentMins > end) return null

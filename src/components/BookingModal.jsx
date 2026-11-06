@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../supabaseClient'
 import { X, Calendar, Clock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import confetti from 'canvas-confetti'
+import { getTodayStr, getDayOfWeek } from '../lib/time'
 
 // Generates time slots in 30-min intervals
 const generateTimeSlots = (startHour = 8, endHour = 22) => {
@@ -27,14 +28,6 @@ export default function BookingModal({
   initialEndTime = '10:00'
 }) {
   const timeSlots = generateTimeSlots()
-
-  const getTodayStr = () => {
-    const today = new Date()
-    const yyyy = today.getFullYear()
-    const mm = String(today.getMonth() + 1).padStart(2, '0')
-    const dd = String(today.getDate()).padStart(2, '0')
-    return `${yyyy}-${mm}-${dd}`
-  }
 
   const [date, setDate] = useState(getTodayStr())
   const [startTime, setStartTime] = useState(initialStartTime)
@@ -71,7 +64,15 @@ export default function BookingModal({
 
     const formattedStart = `${startTime}:00`
     const formattedEnd = `${endTime}:00`
-    const bookingDow = new Date(date).getDay()
+    const bookingDow = getDayOfWeek(date)
+
+    // 0. No bookings in the past (campus timezone). The DB trigger enforces
+    //    this too; this just gives instant feedback.
+    if (date < getTodayStr()) {
+      setError('You cannot book a date in the past.')
+      setLoading(false)
+      return
+    }
 
     // 1. Client-Side Overlap Verification
     const scheduleOverlap = schedules.find(s => 

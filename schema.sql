@@ -29,7 +29,10 @@ CREATE POLICY "Allow public read schedules" ON schedules FOR SELECT USING (true)
 CREATE TABLE IF NOT EXISTS bookings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
-    date DATE NOT NULL CHECK (date >= CURRENT_DATE),
+    -- No CHECK on date: a CHECK is re-evaluated on every UPDATE and would block
+    -- cancelling past bookings. "No past bookings" is enforced on INSERT by the
+    -- trigger below (see migration_01).
+    date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
     booked_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -49,21 +52,39 @@ CREATE POLICY "Allow user update own bookings" ON bookings FOR UPDATE
     WITH CHECK (auth.uid() = booked_by);
 
 -- 4. Overlap Check Trigger function
-CREATE OR REPLACE FUNCTION check_booking_overlap()
-RETURNS TRIGGER AS $$
+--    - advisory lock per (room, date) prevents the two-tab race condition
+--    - rejects past dates on INSERT only, using Asia/Kolkata "today"
+--    - SECURITY DEFINER so it sees all bookings regardless of RLS
+CREATE OR REPLACE FUNCTION public.check_booking_overlap()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   has_schedule_overlap BOOLEAN;
-  has_booking_overlap BOOLEAN;
-  booking_dow INT;
+  has_booking_overlap  BOOLEAN;
+  booking_dow          INT;
+  today_ist            DATE := (now() AT TIME ZONE 'Asia/Kolkata')::date;
 BEGIN
-  -- Only validate confirmed bookings
-  IF NEW.status != 'confirmed' THEN
+  -- a. Serialise writes for the same room + date. The lock is released
+  --    automatically when the transaction commits or rolls back.
+  PERFORM pg_advisory_xact_lock(hashtext(NEW.room_id::text || NEW.date::text));
+
+  -- b. No new bookings in the past (Asia/Kolkata). INSERT only, so
+  --    cancelling an old booking (an UPDATE) is always allowed.
+  IF TG_OP = 'INSERT' AND NEW.date < today_ist THEN
+    RAISE EXCEPTION 'Cannot book a date in the past (today in Asia/Kolkata is %).', today_ist;
+  END IF;
+
+  -- Only confirmed bookings occupy a room; cancelled ones never conflict.
+  IF NEW.status <> 'confirmed' THEN
     RETURN NEW;
   END IF;
 
-  -- 1. Check schedule overlaps (same day of week, same room, overlapping time)
-  booking_dow := extract(dow from NEW.date);
-  
+  -- c. Overlap with a recurring scheduled class (same room, same weekday).
+  booking_dow := extract(dow FROM NEW.date);
+
   SELECT EXISTS (
     SELECT 1 FROM schedules
     WHERE room_id = NEW.room_id
@@ -76,13 +97,13 @@ BEGIN
     RAISE EXCEPTION 'Booking overlaps with a recurring scheduled class.';
   END IF;
 
-  -- 2. Check bookings overlaps (same date, same room, confirmed status, overlapping time)
+  -- d. Overlap with another confirmed booking (same room, same date).
   SELECT EXISTS (
     SELECT 1 FROM bookings
     WHERE room_id = NEW.room_id
       AND date = NEW.date
       AND status = 'confirmed'
-      AND id != NEW.id -- exclude self when updating
+      AND id <> NEW.id -- exclude self when updating
       AND start_time < NEW.end_time
       AND end_time > NEW.start_time
   ) INTO has_booking_overlap;
@@ -93,10 +114,11 @@ BEGIN
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Create the trigger
+DROP TRIGGER IF EXISTS trg_check_booking_overlap ON public.bookings;
 CREATE TRIGGER trg_check_booking_overlap
-BEFORE INSERT OR UPDATE ON bookings
+BEFORE INSERT OR UPDATE ON public.bookings
 FOR EACH ROW
-EXECUTE FUNCTION check_booking_overlap();
+EXECUTE FUNCTION public.check_booking_overlap();

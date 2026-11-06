@@ -1,4 +1,5 @@
 import { Users, Plus, MapPin } from 'lucide-react'
+import { getDayOfWeek } from '../lib/time'
 
 export default function RoomCard({ 
   room, 
@@ -8,8 +9,7 @@ export default function RoomCard({
   selectedTime, 
   onBookClick 
 }) {
-  const dateObj = new Date(selectedDate)
-  const dayOfWeek = dateObj.getDay() // 0 = Sunday, 6 = Saturday
+  const dayOfWeek = getDayOfWeek(selectedDate) // 0 = Sunday, 6 = Saturday
 
   const isTimeInRange = (time, start, end) => {
     return time >= start && time < end
