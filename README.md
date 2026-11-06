@@ -142,6 +142,12 @@ RLS is enabled on every table. The UI hides admin features from students, but **
 - \* A room with upcoming confirmed bookings cannot be deleted (`trg_block_room_delete`). Because `bookings.room_id` is `ON DELETE CASCADE`, deleting a room removes its past/cancelled bookings and timetable; the admin UI warns about this before deleting.
 - Only the public **anon** key is used in the frontend. The service-role key is never used.
 
+### Security notes
+
+- **Committed key history:** an early commit (`c4de112`) accidentally included a `.env` file. It contained only the project URL and the **publishable (anon) key** – no service-role or secret key – and was removed the same day (`694b536`). The anon key is public by design: it is shipped to every visitor's browser in the built app anyway.
+- **Access is enforced by Row Level Security**, not by keeping the anon key secret. Every table has RLS enabled, and the policies, column grants and triggers described above decide what each user may read or change (verified by `npm run test:api`).
+- **Never commit or use a service-role / secret key in the frontend.** It bypasses RLS completely. `.env`, `.env.test` and `.env.local` are git-ignored; only `.env.example` with placeholder values is committed. The service-role key must never be put in any `VITE_*` variable, because Vite embeds those in the public JavaScript bundle.
+
 ---
 
 ## Setup
