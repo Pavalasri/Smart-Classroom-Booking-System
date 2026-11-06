@@ -255,12 +255,20 @@ export default function App() {
     if (!window.confirm('Are you sure you want to cancel this booking?')) return
 
     try {
-      const { error: cancelErr } = await supabase
+      // Soft cancel: the row is kept with status = 'cancelled' (never deleted).
+      // RLS silently skips rows the user may not change, so we ask for the
+      // updated row back and treat "0 rows" as a failure.
+      const { data, error: cancelErr } = await supabase
         .from('bookings')
         .update({ status: 'cancelled' })
         .eq('id', bookingId)
+        .eq('status', 'confirmed')
+        .select('id')
 
       if (cancelErr) throw cancelErr
+      if (!data || data.length === 0) {
+        throw new Error('This booking could not be cancelled. It may already be cancelled or belong to someone else.')
+      }
 
       setBookings(prev => prev.filter(b => b.id !== bookingId))
     } catch (err) {

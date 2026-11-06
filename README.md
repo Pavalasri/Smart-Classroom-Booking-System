@@ -39,7 +39,7 @@ CampusFlow addresses these issues with:
    - The application checks the local cache of schedules and bookings and gives instant feedback if there's a conflict.
    - If the precheck passes, a DB write is made. The PostgreSQL trigger runs to guarantee no overlap exists, returning an error to the UI if a conflict occurred.
 6. **Confetti & Realtime Broadcast**: On a successful booking, confetti animations play. The database insert fires a Realtime broadcast to all other open tabs, which automatically recalculate statuses and update room cards instantly.
-7. **Reservation Management**: Users can delete their active bookings by clicking the cancel icon directly on the room card's timeline.
+7. **Reservation Management**: Users can cancel their own confirmed bookings from the timeline or the My Bookings page. Cancelling is a *soft cancel*: the row is kept with `status = 'cancelled'` (nothing is deleted), so history is preserved. Cancelled bookings are ignored by the overlap trigger and by the occupancy calculation, so the slot becomes free immediately.
 
 ---
 
@@ -50,7 +50,7 @@ To ensure that room bookings never conflict, CampusFlow uses a **dual-layer over
 ### 1. Database-Level Transaction Safety (PostgreSQL Trigger)
 To prevent race conditions (e.g., two users booking the exact same slot at the exact same millisecond), the booking validation is enforced at the database level.
 *   We use a `BEFORE INSERT OR UPDATE` trigger named `trg_check_booking_overlap` on the `bookings` table.
-*   When a insert is attempted, the trigger function `check_booking_overlap()` does two checks:
+*   When an insert or update is attempted, the trigger function `check_booking_overlap()` does two checks:
     1.  **Schedules Overlap Check**: It extracts the day of the week (`0-6`) for the booking date and checks the `schedules` table for any overlapping recurring class (`start_time < NEW.end_time AND end_time > NEW.start_time`) in the same room.
     2.  **Bookings Overlap Check**: It checks the `bookings` table for other confirmed bookings on the same date (`date = NEW.date`) that overlap with the requested time.
 *   If either check fails, the transaction is aborted with `RAISE EXCEPTION`, returning a clear error message to the client.
