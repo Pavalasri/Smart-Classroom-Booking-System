@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient'
 import { Building2, ListChecks, Pencil, Plus, Save, Trash2, X } from 'lucide-react'
 import { cancelBooking } from '../lib/bookings'
 import { addDays, getTodayStr } from '../lib/time'
+import AdminAnalytics from './AdminAnalytics'
 
 // Admin-only page. The UI is hidden for non-admins, but the real protection
 // is RLS + is_admin() in the database (migration_03): a student calling these
@@ -265,6 +266,7 @@ export default function AdminPanel({ rooms, onRoomsChanged }) {
           {error}
         </div>
       )}
+      <AdminAnalytics bookings={bookings} rooms={rooms} />
       <AllBookings bookings={bookings} emailById={emailById} onChanged={loadBookings} />
       <RoomsManager rooms={rooms} onRoomsChanged={onRoomsChanged} />
     </div>
