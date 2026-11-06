@@ -42,14 +42,25 @@ CREATE TABLE IF NOT EXISTS bookings (
 
 -- Enable RLS for bookings
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
+-- Public read keeps the live occupancy grid + Realtime working for guests.
+-- Trade-off: booked_by UUIDs are visible (see README "Future scope").
 CREATE POLICY "Allow public read bookings" ON bookings FOR SELECT USING (true);
-CREATE POLICY "Allow authenticated insert bookings" ON bookings FOR INSERT 
-    TO authenticated 
-    WITH CHECK (auth.uid() = booked_by);
-CREATE POLICY "Allow user update own bookings" ON bookings FOR UPDATE 
-    TO authenticated 
-    USING (auth.uid() = booked_by)
-    WITH CHECK (auth.uid() = booked_by);
+-- Users may only create confirmed bookings for themselves.
+CREATE POLICY "Allow authenticated insert bookings" ON bookings FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = booked_by AND status = 'confirmed');
+-- Users may only cancel their own confirmed bookings (see migration_02).
+CREATE POLICY "Allow user update own bookings" ON bookings FOR UPDATE
+    TO authenticated
+    USING (auth.uid() = booked_by AND status = 'confirmed')
+    WITH CHECK (auth.uid() = booked_by AND status = 'cancelled');
+
+-- Only the "status" column is updatable from the API; no hard deletes.
+REVOKE UPDATE ON bookings FROM anon, authenticated;
+GRANT  UPDATE (status) ON bookings TO authenticated;
+REVOKE DELETE, TRUNCATE ON bookings FROM anon, authenticated;
+REVOKE DELETE, TRUNCATE ON rooms, schedules FROM anon;
+REVOKE TRUNCATE ON rooms, schedules FROM authenticated;
 
 -- 4. Overlap Check Trigger function
 --    - advisory lock per (room, date) prevents the two-tab race condition
