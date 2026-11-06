@@ -215,7 +215,30 @@ Other scripts: `npm run build` (production build to `dist/`), `npm run lint` (ox
 
 ---
 
-## Testing (manual test cases)
+## Testing
+
+### Automated API tests (`tests/`)
+
+[`tests/api-tests.mjs`](tests/api-tests.mjs) checks the database rules through the public API, using the anon key and real user sessions just like the app. It covers sign-up/profile creation, concurrent double-booking, schedule and past-date rejection, cancel rules, column-level edit protection, student/anonymous/admin permissions and the room-delete guard. Results are printed and written to [`tests/TEST_RESULTS.md`](tests/TEST_RESULTS.md), with the project ref and test emails redacted.
+
+**Always run it against a separate test Supabase project, never production.** It creates throw-away users and bookings.
+
+1. Create a second Supabase project. In its SQL Editor run `schema.sql`, `seed.sql` and `indexes.sql`.
+2. In that project go to **Authentication → Sign In / Providers → Email** and turn off **Confirm email**.
+3. Create `.env.test` in the repo root (it is git-ignored) with that project's values:
+   ```env
+   VITE_SUPABASE_URL=https://your-test-project-ref.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-test-anon-key
+   ```
+   The script reads only `.env.test` and refuses to run with a secret/service-role key.
+4. Run:
+   ```bash
+   npm run test:api
+   ```
+5. After the student and anonymous tests, it prints an `UPDATE public.profiles SET role='admin' ...` statement. Run it in the test project's SQL Editor, then press Enter (in a terminal) and the admin tests run.
+6. Optional clean-up: the test users stay in **Authentication → Users**. Delete them there, or with `DELETE FROM auth.users WHERE email LIKE '%+<run id>@example.com';` (this also removes their profiles and bookings).
+
+### Manual test cases
 
 Use two different accounts (**User A**, **User B**) and, for admin tests, an account promoted to admin. Some tests use the SQL Editor to act as a specific user:
 
